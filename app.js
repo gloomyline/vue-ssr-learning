@@ -2,23 +2,26 @@
 * @Author: AlanWang
 * @Date:   2017-10-14 00:01:59
 * @Last Modified by:   AlanWang
-* @Last Modified time: 2017-10-14 12:41:35
+* @Last Modified time: 2017-10-14 13:07:57
 */
-
-const fs = require('fs')
 
 // Rendering a Vue instance
 
-// Create a Vue instance
+// Instead of directly createing a Vue instance,
+// expose a factory function that can be repeatedly excuted to
+// create fresh app instance for each request
 const Vue = require('vue')
-// const app = new Vue({
-//   template: '<div>Hello World</div>'
-// })
 
-// Create a renderer
-const renderer = require('vue-server-renderer').createRenderer({
-  template: fs.readFileSync('./index.template.html', 'utf-8')
-})
+module.exports = function createApp(context) {
+  return new Vue({
+    data: {
+      url: context.url
+    },
+    template: `<div>The visited URL is: {{ url }}</div>`
+  })
+}
+
+
 
 // Render the Vue instance to HTML
 // renderer.renderToString(app, (err, html) => {
@@ -33,33 +36,3 @@ const renderer = require('vue-server-renderer').createRenderer({
 //   console.log(err)
 // })
 
-// Intergrating with a server
-const server = require('express')()
-
-server.get('*', (req, res) => {
-  const app = new Vue({
-    el: '#app',
-    data: {
-      url: req.url
-    },
-    template: '<div>The visited URL is: {{ url }}</div>'
-  })
-
-  const context = {
-    title: 'Hello',
-    meta: `<meta charset="utf-8">`
-  }
-
-  renderer.renderToString(app, context).then(html => {
-    res.send(html)
-  }).catch(err => {
-    res.status(500).end('Interal Server Error')
-    return
-  })
-})
-
-const port = 8080
-server.listen(port, err => {
-  if (err) console.log(err)
-  console.log(`Server is running on port:${port}`)
-})
