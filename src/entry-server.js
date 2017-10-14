@@ -2,7 +2,7 @@
 * @Author: AlanWang
 * @Date:   2017-10-14 13:52:52
 * @Last Modified by:   AlanWang
-* @Last Modified time: 2017-10-14 14:11:50
+* @Last Modified time: 2017-10-14 15:11:55
 */
 
 import { createApp } from './app'
@@ -12,7 +12,7 @@ export defautl context => {
   // we will be returning a Promise so that the server can wait until
   // everything is ready before rendering
   return new Promise((resolve, reject) => {
-    const { app, router } = createApp()
+    const { app, router, store } = createApp()
 
     // set server-side router's location
     router.push(context.url)
@@ -25,7 +25,24 @@ export defautl context => {
         return reject({ code: 404 })
       }
 
-      resolve(app)
+      // call `asyncData()` on all matched route components
+      Promise.all(matchedComponents.map(Component => {
+        if (Component.asyncData) {
+          return Component.asyncData({
+            store,
+            route: router.currentRoute
+          })
+        }
+      })).then(() => {
+        // After all preFetch hooks are resolved, our store is now
+        // filled with the state needed to render the app.
+        // when we attach the state to the context, and the 'template' option
+        // is used for the renderer, the state will automatically be
+        // serialized and injected into HTML as 'window.__INITIAL_STATE__'
+        context.state = store.state
+
+        resolve(app)
+      }).catch(reject)
     })
   }, reject)
 }
