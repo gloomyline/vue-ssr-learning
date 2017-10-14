@@ -2,11 +2,12 @@
 * @Author: AlanWang
 * @Date:   2017-10-14 13:01:56
 * @Last Modified by:   AlanWang
-* @Last Modified time: 2017-10-14 13:10:17
+* @Last Modified time: 2017-10-14 14:16:56
 */
 
+const createApp = require('/path/to/built-server-bundle.js')
+
 const fs = require('fs')
-const createApp = require('./app')
 const server = require('express')()
 
 // Create a renderer
@@ -16,18 +17,21 @@ const renderer = require('vue-server-renderer').createRenderer({
 
 server.get('*', (req, res) => {
   const httpContext = { url: req.url }
-  const app = createApp(httpContext)
 
-  const context = {
-    title: 'Hello',
-    meta: `<meta charset="utf-8">`
-  }
-
-  renderer.renderToString(app, context).then(html => {
-    res.send(html)
-  }).catch(err => {
-    res.status(500).end('Interal Server Error')
-    return
+  createApp(httpContext).then(app => {
+    const context = {
+      title: 'Hello',
+      meta: `<meta charset="utf-8">`
+    }
+    renderer.renderToString(app, context).then(html => {
+      res.send(html)
+    }).catch(err => {
+      if (err.code === 404) {
+        res.status(404).end('Page not found')
+      } else {
+        res.status(500).end('Interal Server Error')
+      }
+    })
   })
 })
 
